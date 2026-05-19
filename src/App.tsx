@@ -21,9 +21,9 @@ import './App.css';
 // Heights are tuned to content with 8px bottom padding.
 const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: number }>> = {
   regular: {
-    standard:   { width: 320, height: 490 },
-    scientific: { width: 340, height: 615 },
-    programmer: { width: 320, height: 570 },
+    standard:   { width: 320, height: 430 },
+    scientific: { width: 340, height: 470 },
+    programmer: { width: 320, height: 505 },
   },
   compact: {
     standard:   { width: 320, height: 96 },

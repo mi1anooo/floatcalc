@@ -1,7 +1,8 @@
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  min-height: 0;
   width: 100%;
   background: var(--bg-app);
   border-radius: var(--radius-window);
@@ -10,7 +11,6 @@
   overflow: hidden;
   transition: border-radius var(--transition-smooth), background var(--transition-smooth);
   position: relative;
-  /* Ensures content fills exactly, no extra space */
   box-sizing: border-box;
 }
 
