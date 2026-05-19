@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { appWindow } from '@tauri-apps/api/window';
+import { appWindow, currentMonitor } from '@tauri-apps/api/window';
 
 import { AppMode, AppSettings, AppTheme, CalcMode, CalculationEntry, Folder } from './types';
 import { evaluate } from './utils/calculator';
@@ -53,7 +53,7 @@ const SCREEN_MARGIN = 10;
 async function clampWindowToScreen() {
   const { PhysicalPosition } = await import('@tauri-apps/api/window');
 
-  const monitor = await appWindow.currentMonitor();
+  const monitor = await currentMonitor();
   if (!monitor) return;
 
   const position = await appWindow.outerPosition();
