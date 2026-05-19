@@ -48,6 +48,38 @@ const DEFAULT_SETTINGS: AppSettings = {
   calcMode:     'standard',
   theme:        'night',
 };
+const SCREEN_MARGIN = 10;
+
+async function clampWindowToScreen() {
+  const { PhysicalPosition } = await import('@tauri-apps/api/window');
+
+  const monitor = await appWindow.currentMonitor();
+  if (!monitor) return;
+
+  const position = await appWindow.outerPosition();
+  const size = await appWindow.outerSize();
+
+  const minX = monitor.position.x + SCREEN_MARGIN;
+  const minY = monitor.position.y + SCREEN_MARGIN;
+
+  const maxX = monitor.position.x + monitor.size.width - size.width - SCREEN_MARGIN;
+  const maxY = monitor.position.y + monitor.size.height - size.height - SCREEN_MARGIN;
+
+  // If the app is wider/taller than the current monitor for any reason,
+  // do not allow the clamp range to invert.
+  const safeMaxX = Math.max(minX, maxX);
+  const safeMaxY = Math.max(minY, maxY);
+
+  const nextX = Math.min(Math.max(position.x, minX), safeMaxX);
+  const nextY = Math.min(Math.max(position.y, minY), safeMaxY);
+
+  if (nextX !== position.x || nextY !== position.y) {
+    await appWindow.setPosition(
+      new PhysicalPosition(Math.round(nextX), Math.round(nextY))
+    );
+  }
+}
+
 
 function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -106,7 +138,13 @@ export default function App() {
   const applyWindowSize = useCallback(async (m: AppMode, c: CalcMode) => {
     const { LogicalSize } = await import('@tauri-apps/api/window');
     const { width, height } = MODE_SIZE[m][c];
+
     await appWindow.setSize(new LogicalSize(width, height));
+
+    // Windows needs a short beat to apply the new size before we read bounds.
+    await new Promise((resolve) => setTimeout(resolve, 40));
+
+    await clampWindowToScreen();
   }, []);
 
   const switchMode = useCallback(async (newMode: AppMode) => {
@@ -128,15 +166,13 @@ export default function App() {
       modeBeforeSettings.current = 'compact';
       // Expand to regular so settings has room
       const calcMode = settingsRef.current.calcMode;
-      const { LogicalSize } = await import('@tauri-apps/api/window');
-      const { width, height } = MODE_SIZE['regular'][calcMode];
-      await appWindow.setSize(new LogicalSize(width, height));
+      await applyWindowSize('regular', calcMode);
       setMode('regular');
     } else {
       modeBeforeSettings.current = null;
     }
     setShowMenu(true);
-  }, []);
+  }, [applyWindowSize]);
 
   // ── Close settings: restore compact if we came from it ──
   const handleMenuClose = useCallback(async () => {
@@ -144,9 +180,7 @@ export default function App() {
     if (modeBeforeSettings.current === 'compact') {
       modeBeforeSettings.current = null;
       const calcMode = settingsRef.current.calcMode;
-      const { LogicalSize } = await import('@tauri-apps/api/window');
-      const { width, height } = MODE_SIZE['compact'][calcMode];
-      await appWindow.setSize(new LogicalSize(width, height));
+      await applyWindowSize('compact', calcMode);
       setMode('compact');
       setSettings((prev) => {
         const next = { ...prev, lastMode: 'compact' as AppMode };
@@ -154,7 +188,7 @@ export default function App() {
         return next;
       });
     }
-  }, []);
+  }, [applyWindowSize]);
 
   // ── Live preview ────────────────────────────────────────
   useEffect(() => {
