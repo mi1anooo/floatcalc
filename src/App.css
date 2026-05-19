@@ -7,7 +7,7 @@
   background: var(--bg-app);
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-window);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: none;
   overflow: hidden;
   transition: border-radius var(--transition-smooth), background var(--transition-smooth);
   position: relative;
@@ -23,6 +23,18 @@
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
   pointer-events: none;
   z-index: 1;
+}
+
+/* Inset outline. This renders inside the transparent Tauri window, so the
+   rounded-corner stroke is not clipped by the OS/window edge. */
+.app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 999;
 }
 
 /* Compact: pill bar */

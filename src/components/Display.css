@@ -13,15 +13,14 @@
   flex-shrink: 0;
 }
 
-/* Compact: tighter, full width, no margin */
+/* Compact: floating display with enough height for expression + preview/result */
 .display--compact {
-  min-height: 62px;
-  margin: 0;
-  border-radius: 0;
-  /* Extra bottom padding so text doesn't clip */
+  min-height: 78px;
+  margin: 0 10px 10px;
+  border-radius: 10px;
   padding: 10px 14px 12px;
-  border: none;
-  border-bottom: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 
 .display__expression {
@@ -69,4 +68,25 @@
   font-weight: 700;
   font-size: 9px;
   letter-spacing: 0.05em;
+}
+
+
+/* Compact mode text should never clip vertically. */
+.display--compact .display__expression {
+  font-size: 26px;
+  line-height: 1.15;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.display--compact .display__preview {
+  font-size: 13px;
+  line-height: 1.25;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-bottom: 0;
 }

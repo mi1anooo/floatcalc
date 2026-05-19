@@ -26,9 +26,11 @@ const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: numbe
     programmer: { width: 320, height: 505 },
   },
   compact: {
-    standard:   { width: 320, height: 96 },
-    scientific: { width: 320, height: 96 },
-    programmer: { width: 320, height: 96 },
+    // 96px was too short once the title bar + two-line display were rendered.
+    // 128px gives the display enough vertical room without losing the compact feel.
+    standard:   { width: 320, height: 128 },
+    scientific: { width: 320, height: 128 },
+    programmer: { width: 320, height: 128 },
   },
   history: {
     standard:   { width: 480, height: 640 },
