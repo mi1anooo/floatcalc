@@ -89,6 +89,9 @@ AutoCloseWindow false
 !define MUI_TEXTCOLOR "${FC_TEXT}"
 !define MUI_INSTFILESPAGE_COLORS "${FC_TEXT} ${FC_DISPLAY}"
 !define MUI_FINISHPAGE_LINK_COLOR "${FC_RESULT}"
+; Let MUI own the .onGUIInit callback, then call our custom theme function from it.
+; Do not define Function .onGUIInit directly, because MUI already creates that callback.
+!define MUI_CUSTOMFUNCTION_GUIINIT FloatCalcGUIInit
 
 !if "${INSTALLERICON}" != ""
   !define MUI_ICON "${INSTALLERICON}"
@@ -185,7 +188,7 @@ Function un.onInit
 FunctionEnd
 
 ; Applies extra dark styling to MUI shell controls.
-Function .onGUIInit
+Function FloatCalcGUIInit
   SetCtlColors $HWNDPARENT "${FC_TEXT}" "${FC_BG}"
 
   ; Header and footer surfaces used by Modern UI.
