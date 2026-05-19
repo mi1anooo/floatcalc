@@ -1,8 +1,18 @@
 .btn-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 0 12px 12px;
+  grid-template-columns: repeat(var(--grid-cols, 4), 1fr);
+  gap: 7px;
+  padding: 0 10px 10px;
+}
+
+/* Scientific needs tighter buttons */
+.btn-grid--scientific {
+  gap: 5px;
+  padding: 0 8px 8px;
+}
+.btn-grid--programmer {
+  gap: 6px;
+  padding: 0 9px 9px;
 }
 
 .btn-grid__btn {
@@ -10,9 +20,9 @@
   color: var(--text-primary);
   border: none;
   border-radius: var(--radius-btn);
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 400;
-  height: 58px;
+  height: 54px;
   cursor: pointer;
   transition:
     background var(--transition-fast),
@@ -23,55 +33,55 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.btn-grid--scientific .btn-grid__btn { height: 44px; font-size: 13px; }
+.btn-grid--programmer .btn-grid__btn { height: 48px; font-size: 14px; }
+
 .btn-grid__btn:hover {
   background: var(--bg-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
-
 .btn-grid__btn:active {
   transform: translateY(1px) scale(0.97);
   box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
-/* Operator buttons */
 .btn-grid__btn--operator {
   background: var(--bg-btn-op);
   color: var(--text-operator);
   font-weight: 600;
 }
-.btn-grid__btn--operator:hover {
-  background: var(--bg-hover-op);
-}
+.btn-grid__btn--operator:hover { background: var(--bg-hover-op); }
 
-/* Clear / delete */
 .btn-grid__btn--clear {
   background: var(--bg-btn-clear);
   color: #f87171;
   font-weight: 600;
 }
-.btn-grid__btn--clear:hover {
-  background: #4a2828;
-}
+.btn-grid__btn--clear:hover { background: #4a2828; }
 
-/* Equals */
 .btn-grid__btn--equals {
   background: var(--bg-btn-eq);
   color: var(--text-eq);
   font-weight: 700;
-  box-shadow: 0 2px 16px rgba(91, 61, 232, 0.4);
+  box-shadow: 0 2px 16px rgba(91,61,232,0.4);
 }
 .btn-grid__btn--equals:hover {
   background: var(--bg-hover-eq);
-  box-shadow: 0 4px 20px rgba(91, 61, 232, 0.6);
+  box-shadow: 0 4px 20px rgba(91,61,232,0.6);
 }
 
-/* Function buttons (√) */
 .btn-grid__btn--function {
   background: var(--bg-btn-op);
   color: var(--text-operator);
-  font-size: 20px;
+  font-size: 13px;
+  font-weight: 500;
 }
-.btn-grid__btn--function:hover {
-  background: var(--bg-hover-op);
+.btn-grid__btn--function:hover { background: var(--bg-hover-op); }
+
+.btn-grid__btn--mem {
+  background: #1e2a3a;
+  color: #60a5fa;
+  font-size: 12px;
 }
+.btn-grid__btn--mem:hover { background: #243244; }

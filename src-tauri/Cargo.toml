@@ -7,8 +7,6 @@ license = ""
 repository = ""
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [build-dependencies]
 tauri-build = { version = "1.5", features = [] }
 
@@ -19,12 +17,11 @@ tauri = { version = "1.6", features = [
   "fs-read-file",
   "fs-write-file",
   "fs-create-dir",
-  "fs-exists"
+  "fs-exists",
+  "system-tray"
 ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [features]
-# This feature is used for production builds or when `devPath` points to the
-# filesystem. DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]

@@ -1,0 +1,65 @@
+name: Build FloatCalc Windows Installer
+
+# Runs automatically every time you push code to GitHub
+# You can also trigger it manually from the Actions tab
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      # 1. Check out your code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Install Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3. Install Rust (stable)
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      # 4. Cache Rust build artifacts (makes repeat builds much faster)
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # 5. Install Node dependencies
+      - name: Install Node dependencies
+        run: npm install
+
+      # 6. Build the Tauri app for Windows
+      - name: Build Tauri app
+        run: npm run tauri build
+        env:
+          TAURI_PRIVATE_KEY: ""
+          TAURI_KEY_PASSWORD: ""
+
+      # 7. Upload the installer as a downloadable artifact
+      - name: Upload Windows installer (.msi)
+        uses: actions/upload-artifact@v4
+        with:
+          name: FloatCalc-Windows-Installer
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+          retention-days: 30
+
+      # 8. Upload the raw .exe as well (in case msi isn't generated)
+      - name: Upload standalone exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: FloatCalc-Windows-exe
+          path: src-tauri/target/release/floatcalc.exe
+          retention-days: 30

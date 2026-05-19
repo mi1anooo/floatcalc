@@ -12,7 +12,6 @@
   box-shadow: var(--shadow-window);
   border: 1px solid rgba(255, 255, 255, 0.07);
   overflow: hidden;
-  /* Smooth layout transitions when mode changes */
   transition: border-radius var(--transition-smooth);
   position: relative;
 }
@@ -21,12 +20,6 @@
 .app--compact {
   border-radius: 12px;
   height: 100vh;
-}
-
-/* Regular/history: standard rounded rectangle */
-.app--regular,
-.app--history {
-  border-radius: var(--radius-window);
 }
 
 /* Subtle inner glow at top edge */
@@ -40,4 +33,5 @@
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
   pointer-events: none;
   border-radius: var(--radius-window) var(--radius-window) 0 0;
+  z-index: 1;
 }

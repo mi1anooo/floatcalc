@@ -14,13 +14,8 @@
   "tauri": {
     "allowlist": {
       "all": false,
-      "shell": {
-        "all": false,
-        "open": true
-      },
-      "window": {
-        "all": true
-      },
+      "shell": { "all": false, "open": true },
+      "window": { "all": true },
       "fs": {
         "all": false,
         "readFile": true,
@@ -29,9 +24,7 @@
         "exists": true,
         "scope": ["$APPDATA/*", "$APPDATA/**/*"]
       },
-      "path": {
-        "all": true
-      }
+      "path": { "all": true }
     },
     "bundle": {
       "active": true,
@@ -45,9 +38,12 @@
         "icons/icon.ico"
       ]
     },
-    "security": {
-      "csp": null
+    "systemTray": {
+      "iconPath": "icons/tray-icon.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
     },
+    "security": { "csp": null },
     "windows": [
       {
         "label": "main",

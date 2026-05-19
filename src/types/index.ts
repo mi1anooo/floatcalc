@@ -1,27 +1,29 @@
-/** The three window display modes */
 export type AppMode = 'regular' | 'compact' | 'history';
+export type CalcMode = 'standard' | 'scientific' | 'programmer';
+export type AppTheme = 'dark' | 'system';
 
-/** A single completed calculation stored in history */
 export interface CalculationEntry {
   id: string;
-  expression: string;   // e.g. "24 × 7"
-  result: string;        // e.g. "168"
-  timestamp: number;     // Unix milliseconds
-  name?: string;         // Optional user-defined label
-  folderId?: string;     // Optional folder assignment
+  expression: string;
+  result: string;
+  timestamp: number;
+  name?: string;
+  folderId?: string;
+  calcMode?: CalcMode;
 }
 
-/** A user-created folder for organizing history */
 export interface Folder {
   id: string;
   name: string;
   createdAt: number;
 }
 
-/** Persistent app preferences saved to disk */
 export interface AppSettings {
   alwaysOnTop: boolean;
+  skipTaskbar?: boolean;
   defaultMode: AppMode;
   lastMode: AppMode;
   lastPosition: { x: number; y: number } | null;
+  calcMode: CalcMode;
+  theme: AppTheme;
 }
