@@ -14,21 +14,33 @@
   "tauri": {
     "allowlist": {
       "all": false,
-      "shell": { "all": false, "open": true },
-      "window": { "all": true },
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "window": {
+        "all": true
+      },
       "fs": {
         "all": false,
         "readFile": true,
         "writeFile": true,
         "createDir": true,
         "exists": true,
-        "scope": ["$APPDATA/*", "$APPDATA/**/*"]
+        "scope": [
+          "$APPDATA/*",
+          "$APPDATA/**/*"
+        ]
       },
-      "path": { "all": true }
+      "path": {
+        "all": true
+      }
     },
     "bundle": {
       "active": true,
-      "targets": ["nsis"],
+      "targets": [
+        "nsis"
+      ],
       "identifier": "com.floatcalc.app",
       "icon": [
         "icons/32x32.png",
@@ -37,13 +49,16 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "nsis": {
-        "displayLanguageSelector": false,
-        "languages": ["English"],
-        "installMode": "currentUser",
-        "headerImage": "icons/installer-header.bmp",
-        "sidebarImage": "icons/installer-sidebar.bmp",
-        "license": null
+      "windows": {
+        "nsis": {
+          "displayLanguageSelector": false,
+          "languages": [
+            "English"
+          ],
+          "installMode": "currentUser",
+          "headerImage": "icons/installer-header.bmp",
+          "sidebarImage": "icons/installer-sidebar.bmp"
+        }
       }
     },
     "systemTray": {
@@ -51,7 +66,9 @@
       "iconAsTemplate": true,
       "menuOnLeftClick": false
     },
-    "security": { "csp": null },
+    "security": {
+      "csp": null
+    },
     "windows": [
       {
         "label": "main",
