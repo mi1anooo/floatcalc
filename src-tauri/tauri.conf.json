@@ -57,7 +57,8 @@
           ],
           "installMode": "currentUser",
           "headerImage": "icons/installer-header.bmp",
-          "sidebarImage": "icons/installer-sidebar.bmp"
+          "sidebarImage": "icons/installer-sidebar.bmp",
+          "template": "installer/floatcalc-night-installer.nsi"
         }
       }
     },
