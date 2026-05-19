@@ -1,0 +1,68 @@
+/* ============================================================
+   FloatCalc – Global Styles
+   Dark-mode only, CSS custom properties for theming.
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Color palette */
+  --bg-app:        #1a1a1e;
+  --bg-display:    #111114;
+  --bg-btn:        #2a2a30;
+  --bg-btn-op:     #3a3060;
+  --bg-btn-eq:     #5b3de8;
+  --bg-btn-clear:  #3a2020;
+  --bg-hover:      #35353d;
+  --bg-hover-op:   #4a3e80;
+  --bg-hover-eq:   #6d4ff5;
+  --bg-panel:      #16161a;
+  --bg-card:       #202026;
+  --bg-input:      #2a2a30;
+
+  --text-primary:   #f0f0f5;
+  --text-secondary: #8888a0;
+  --text-result:    #c4b5fd;
+  --text-operator:  #a78bfa;
+  --text-eq:        #ffffff;
+  --text-error:     #f87171;
+
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-focus:   rgba(124,58,237,0.6);
+
+  --shadow-window: 0 32px 80px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-btn:    0 2px 8px rgba(0,0,0,0.4);
+
+  --radius-window: 16px;
+  --radius-btn:    10px;
+  --radius-card:   10px;
+
+  /* Transitions */
+  --transition-fast:   120ms ease;
+  --transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar        { width: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }

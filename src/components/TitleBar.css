@@ -1,0 +1,99 @@
+.titlebar {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px 8px;
+  gap: 8px;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+/* Traffic lights */
+.titlebar__controls {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.titlebar__btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: filter var(--transition-fast), transform var(--transition-fast);
+  position: relative;
+}
+.titlebar__btn:hover { filter: brightness(1.2); transform: scale(1.1); }
+.titlebar__btn:active { transform: scale(0.95); }
+
+.titlebar__btn--close    { background: #ff5f57; }
+.titlebar__btn--minimize { background: #febc2e; }
+
+/* Centre title */
+.titlebar__title {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+/* Mode buttons + hamburger */
+.titlebar__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.titlebar__mode-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 6px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  line-height: 1;
+}
+.titlebar__mode-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.titlebar__mode-btn.active {
+  background: rgba(124, 58, 237, 0.25);
+  color: var(--text-result);
+}
+
+/* Hamburger */
+.titlebar__menu-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 6px;
+  transition: background var(--transition-fast);
+  margin-left: 2px;
+}
+.titlebar__menu-btn span {
+  display: block;
+  width: 14px;
+  height: 1.5px;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  transition: background var(--transition-fast);
+}
+.titlebar__menu-btn:hover {
+  background: var(--bg-hover);
+}
+.titlebar__menu-btn:hover span {
+  background: var(--text-primary);
+}

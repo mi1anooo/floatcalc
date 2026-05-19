@@ -1,0 +1,77 @@
+.btn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.btn-grid__btn {
+  background: var(--bg-btn);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 18px;
+  font-weight: 400;
+  height: 58px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-btn);
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn-grid__btn:hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.btn-grid__btn:active {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+/* Operator buttons */
+.btn-grid__btn--operator {
+  background: var(--bg-btn-op);
+  color: var(--text-operator);
+  font-weight: 600;
+}
+.btn-grid__btn--operator:hover {
+  background: var(--bg-hover-op);
+}
+
+/* Clear / delete */
+.btn-grid__btn--clear {
+  background: var(--bg-btn-clear);
+  color: #f87171;
+  font-weight: 600;
+}
+.btn-grid__btn--clear:hover {
+  background: #4a2828;
+}
+
+/* Equals */
+.btn-grid__btn--equals {
+  background: var(--bg-btn-eq);
+  color: var(--text-eq);
+  font-weight: 700;
+  box-shadow: 0 2px 16px rgba(91, 61, 232, 0.4);
+}
+.btn-grid__btn--equals:hover {
+  background: var(--bg-hover-eq);
+  box-shadow: 0 4px 20px rgba(91, 61, 232, 0.6);
+}
+
+/* Function buttons (√) */
+.btn-grid__btn--function {
+  background: var(--bg-btn-op);
+  color: var(--text-operator);
+  font-size: 20px;
+}
+.btn-grid__btn--function:hover {
+  background: var(--bg-hover-op);
+}
