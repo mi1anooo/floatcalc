@@ -1,24 +1,25 @@
 .display {
   background: var(--bg-display);
   border-radius: 12px;
-  padding: 12px 14px 10px;
+  padding: 10px 14px 10px;
   margin: 0 10px 8px;
-  min-height: 76px;
+  min-height: 72px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: flex-end;
   gap: 3px;
   border: 1px solid var(--border-subtle);
-  transition: min-height var(--transition-smooth);
   flex-shrink: 0;
 }
 
+/* Compact: tighter, full width, no margin */
 .display--compact {
-  min-height: 54px;
+  min-height: 62px;
   margin: 0;
   border-radius: 0;
-  padding: 8px 14px;
+  /* Extra bottom padding so text doesn't clip */
+  padding: 10px 14px 12px;
   border: none;
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -26,7 +27,7 @@
 .display__expression {
   color: var(--text-primary);
   font-weight: 300;
-  line-height: 1.2;
+  line-height: 1.25;
   font-variant-numeric: tabular-nums;
   word-break: break-all;
   text-align: right;
@@ -37,12 +38,15 @@
   color: var(--text-result);
   font-size: 14px;
   font-weight: 400;
-  opacity: 0.8;
+  opacity: 0.85;
   font-variant-numeric: tabular-nums;
+  /* Ensure preview line never clips */
+  line-height: 1.4;
+  padding-bottom: 1px;
 }
 .display__preview--error { color: var(--text-error); }
 
-/* Programmer mode rows */
+/* Programmer mode extras */
 .display__prog-info {
   display: flex;
   flex-direction: column;

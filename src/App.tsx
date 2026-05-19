@@ -3,7 +3,10 @@ import { appWindow } from '@tauri-apps/api/window';
 
 import { AppMode, AppSettings, AppTheme, CalcMode, CalculationEntry, Folder } from './types';
 import { evaluate } from './utils/calculator';
-import { loadHistory, loadFolders, loadSettings, saveHistory, saveFolders, saveSettings } from './utils/storage';
+import {
+  loadHistory, loadFolders, loadSettings,
+  saveHistory, saveFolders, saveSettings,
+} from './utils/storage';
 
 import { TitleBar }       from './components/TitleBar';
 import { Display }        from './components/Display';
@@ -14,12 +17,13 @@ import { SettingsDrawer } from './components/SettingsDrawer';
 import './styles/globals.css';
 import './App.css';
 
-// ── Window dimensions per mode ────────────────────────────────
+// ── Precise window heights per mode × calcMode ─────────────
+// Heights are tuned to content with 8px bottom padding.
 const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: number }>> = {
   regular: {
-    standard:   { width: 320, height: 510 },
-    scientific: { width: 340, height: 630 },
-    programmer: { width: 320, height: 590 },
+    standard:   { width: 320, height: 490 },
+    scientific: { width: 340, height: 615 },
+    programmer: { width: 320, height: 570 },
   },
   compact: {
     standard:   { width: 320, height: 96 },
@@ -35,11 +39,12 @@ const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: numbe
 
 const DEFAULT_SETTINGS: AppSettings = {
   alwaysOnTop:  true,
+  skipTaskbar:  false,
   defaultMode:  'regular',
   lastMode:     'regular',
   lastPosition: null,
   calcMode:     'standard',
-  theme:        'dark',
+  theme:        'night',
 };
 
 function uid(): string {
@@ -57,16 +62,19 @@ export default function App() {
   const [folders,  setFolders]  = useState<Folder[]>([]);
   const [showMenu, setShowMenu] = useState(false);
 
+  // Track the mode we were in BEFORE opening settings from compact
+  const modeBeforeSettings = useRef<AppMode | null>(null);
+
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  // ── Load persisted data ───────────────────────────────────
+  // ── Load persisted data ─────────────────────────────────
   useEffect(() => {
     (async () => {
       const [savedSettings, savedHistory, savedFolders] = await Promise.all([
         loadSettings(), loadHistory(), loadFolders(),
       ]);
-      const s = { ...DEFAULT_SETTINGS, ...savedSettings };
+      const s: AppSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
       setSettings(s);
       if (savedHistory) setHistory(savedHistory);
       if (savedFolders) setFolders(savedFolders);
@@ -76,9 +84,10 @@ export default function App() {
       setMode(startMode);
 
       await appWindow.setAlwaysOnTop(s.alwaysOnTop);
-      if (s.skipTaskbar !== undefined) {
-        await appWindow.setSkipTaskbar(s.skipTaskbar);
-      }
+      if (s.skipTaskbar) await appWindow.setSkipTaskbar(true);
+
+      // Apply theme on launch
+      applyTheme(s.theme);
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -86,7 +95,12 @@ export default function App() {
   useEffect(() => { saveHistory(history); }, [history]);
   useEffect(() => { saveFolders(folders); }, [folders]);
 
-  // ── Window sizing ─────────────────────────────────────────
+  // ── Theme application ───────────────────────────────────
+  const applyTheme = (theme: AppTheme) => {
+    document.documentElement.setAttribute('data-theme', theme);
+  };
+
+  // ── Window sizing ───────────────────────────────────────
   const applyWindowSize = useCallback(async (m: AppMode, c: CalcMode) => {
     const { LogicalSize } = await import('@tauri-apps/api/window');
     const { width, height } = MODE_SIZE[m][c];
@@ -104,7 +118,43 @@ export default function App() {
     });
   }, [applyWindowSize]);
 
-  // ── Live preview ──────────────────────────────────────────
+  // ── Open settings: always expand to regular first ───────
+  const handleMenuOpen = useCallback(async () => {
+    const currentMode = settingsRef.current.lastMode;
+    if (currentMode === 'compact') {
+      // Remember we came from compact
+      modeBeforeSettings.current = 'compact';
+      // Expand to regular so settings has room
+      const calcMode = settingsRef.current.calcMode;
+      const { LogicalSize } = await import('@tauri-apps/api/window');
+      const { width, height } = MODE_SIZE['regular'][calcMode];
+      await appWindow.setSize(new LogicalSize(width, height));
+      setMode('regular');
+    } else {
+      modeBeforeSettings.current = null;
+    }
+    setShowMenu(true);
+  }, []);
+
+  // ── Close settings: restore compact if we came from it ──
+  const handleMenuClose = useCallback(async () => {
+    setShowMenu(false);
+    if (modeBeforeSettings.current === 'compact') {
+      modeBeforeSettings.current = null;
+      const calcMode = settingsRef.current.calcMode;
+      const { LogicalSize } = await import('@tauri-apps/api/window');
+      const { width, height } = MODE_SIZE['compact'][calcMode];
+      await appWindow.setSize(new LogicalSize(width, height));
+      setMode('compact');
+      setSettings((prev) => {
+        const next = { ...prev, lastMode: 'compact' as AppMode };
+        saveSettings(next);
+        return next;
+      });
+    }
+  }, []);
+
+  // ── Live preview ────────────────────────────────────────
   useEffect(() => {
     if (!expression) { setPreview(''); setIsError(false); return; }
     try {
@@ -116,7 +166,7 @@ export default function App() {
     }
   }, [expression]);
 
-  // ── Compute result ────────────────────────────────────────
+  // ── Compute result ──────────────────────────────────────
   const computeResult = useCallback(() => {
     if (!expression || isError) return;
     try {
@@ -131,7 +181,7 @@ export default function App() {
     } catch { setIsError(true); setPreview('Invalid expression'); }
   }, [expression, isError]);
 
-  // ── Input handlers ────────────────────────────────────────
+  // ── Input handlers ──────────────────────────────────────
   const handleInput  = useCallback((v: string) => {
     if (v === '√') { setExpression((p) => p + '√('); return; }
     setExpression((p) => p + v);
@@ -139,7 +189,7 @@ export default function App() {
   const handleClear  = useCallback(() => { setExpression(''); setPreview(''); setIsError(false); }, []);
   const handleDelete = useCallback(() => setExpression((p) => p.slice(0, -1)), []);
 
-  // ── Keyboard ──────────────────────────────────────────────
+  // ── Keyboard ────────────────────────────────────────────
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
@@ -159,7 +209,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleInput, handleDelete, handleClear, computeResult]);
 
-  // ── Settings handlers ─────────────────────────────────────
+  // ── Settings handlers ───────────────────────────────────
   const handleToggleAlwaysOnTop = useCallback(async () => {
     const next = !settingsRef.current.alwaysOnTop;
     await appWindow.setAlwaysOnTop(next);
@@ -188,10 +238,11 @@ export default function App() {
   }, [mode, applyWindowSize]);
 
   const handleChangeTheme = useCallback((theme: AppTheme) => {
+    applyTheme(theme);
     setSettings((prev) => { const u = { ...prev, theme }; saveSettings(u); return u; });
   }, []);
 
-  // ── History handlers ──────────────────────────────────────
+  // ── History handlers ────────────────────────────────────
   const handleDeleteEntry  = useCallback((id: string) =>
     setHistory((p) => p.filter((e) => e.id !== id)), []);
   const handleRenameEntry  = useCallback((id: string, name: string) =>
@@ -204,7 +255,7 @@ export default function App() {
   const handleLoadEntry    = useCallback((entry: CalculationEntry) =>
     setExpression(entry.result), []);
 
-  // ── Folder handlers ───────────────────────────────────────
+  // ── Folder handlers ─────────────────────────────────────
   const handleCreateFolder = useCallback((name: string) =>
     setFolders((p) => [...p, { id: uid(), name, createdAt: Date.now() }]), []);
   const handleDeleteFolder = useCallback((id: string) => {
@@ -214,10 +265,10 @@ export default function App() {
   const handleRenameFolder = useCallback((id: string, name: string) =>
     setFolders((p) => p.map((f) => f.id === id ? { ...f, name } : f)), []);
 
-  // ─────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────
   return (
     <div className={`app app--${mode}`}>
-      <TitleBar mode={mode} onModeChange={switchMode} onMenuOpen={() => setShowMenu(true)} />
+      <TitleBar mode={mode} onModeChange={switchMode} onMenuOpen={handleMenuOpen} />
 
       <Display
         expression={expression}
@@ -255,7 +306,7 @@ export default function App() {
       {showMenu && (
         <SettingsDrawer
           settings={settings}
-          onClose={() => setShowMenu(false)}
+          onClose={handleMenuClose}
           onToggleAlwaysOnTop={handleToggleAlwaysOnTop}
           onToggleSkipTaskbar={handleToggleSkipTaskbar}
           onChangeDefaultMode={handleChangeDefaultMode}

@@ -1,6 +1,6 @@
-export type AppMode = 'regular' | 'compact' | 'history';
-export type CalcMode = 'standard' | 'scientific' | 'programmer';
-export type AppTheme = 'dark' | 'system';
+export type AppMode   = 'regular' | 'compact' | 'history';
+export type CalcMode  = 'standard' | 'scientific' | 'programmer';
+export type AppTheme  = 'night' | 'dark' | 'glass';
 
 export interface CalculationEntry {
   id: string;
@@ -19,11 +19,11 @@ export interface Folder {
 }
 
 export interface AppSettings {
-  alwaysOnTop: boolean;
+  alwaysOnTop:  boolean;
   skipTaskbar?: boolean;
-  defaultMode: AppMode;
-  lastMode: AppMode;
+  defaultMode:  AppMode;
+  lastMode:     AppMode;
   lastPosition: { x: number; y: number } | null;
-  calcMode: CalcMode;
-  theme: AppTheme;
+  calcMode:     CalcMode;
+  theme:        AppTheme;
 }

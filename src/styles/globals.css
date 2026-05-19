@@ -1,14 +1,11 @@
 /* ============================================================
-   FloatCalc – Global Styles
+   FloatCalc – Global Styles + Theme System
    ============================================================ */
 
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
+/* ── Night Theme (default) ────────────────────────────────── */
+:root, [data-theme="night"] {
   --bg-app:        #1a1a1e;
   --bg-display:    #111114;
   --bg-btn:        #2a2a30;
@@ -21,6 +18,7 @@
   --bg-panel:      #16161a;
   --bg-card:       #202026;
   --bg-input:      #2a2a30;
+  --bg-drawer:     #16161a;
 
   --text-primary:   #f0f0f5;
   --text-secondary: #8888a0;
@@ -32,22 +30,117 @@
   --border-subtle:  rgba(255,255,255,0.06);
   --border-focus:   rgba(124,58,237,0.6);
 
-  --shadow-window: 0 32px 80px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5);
-  --shadow-btn:    0 2px 8px rgba(0,0,0,0.4);
+  --shadow-window:  0 32px 80px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-btn:     0 2px 8px rgba(0,0,0,0.4);
 
-  --radius-window: 16px;
-  --radius-btn:    10px;
-  --radius-card:   10px;
+  --radius-window:  16px;
+  --radius-btn:     10px;
+  --radius-card:    10px;
 
-  --transition-fast:   120ms ease;
-  --transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --titlebar-bg:    transparent;
+  --app-opacity:    1;
 }
 
+/* ── Dark Theme (Microsoft-inspired, FloatCalc rounded) ────── */
+[data-theme="dark"] {
+  --bg-app:        #202020;
+  --bg-display:    #141414;
+  --bg-btn:        #2d2d2d;
+  --bg-btn-op:     #1e3a5f;
+  --bg-btn-eq:     #0078d4;
+  --bg-btn-clear:  #3a2020;
+  --bg-hover:      #383838;
+  --bg-hover-op:   #254f8a;
+  --bg-hover-eq:   #1a8fe8;
+  --bg-panel:      #1a1a1a;
+  --bg-card:       #272727;
+  --bg-input:      #2d2d2d;
+  --bg-drawer:     #1a1a1a;
+
+  --text-primary:   #f3f3f3;
+  --text-secondary: #888888;
+  --text-result:    #60cdff;
+  --text-operator:  #60cdff;
+  --text-eq:        #ffffff;
+  --text-error:     #fc8c8c;
+
+  --border-subtle:  rgba(255,255,255,0.07);
+  --border-focus:   rgba(0,120,212,0.7);
+
+  --shadow-window:  0 32px 80px rgba(0,0,0,0.8), 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-btn:     0 2px 8px rgba(0,0,0,0.4);
+
+  --radius-window:  16px;
+  --radius-btn:     10px;
+  --radius-card:    8px;
+
+  --titlebar-bg:    transparent;
+  --app-opacity:    1;
+}
+
+/* ── Liquid Glass Theme ────────────────────────────────────── */
+[data-theme="glass"] {
+  --bg-app:        rgba(30, 28, 45, 0.45);
+  --bg-display:    rgba(10, 10, 20, 0.55);
+  --bg-btn:        rgba(255, 255, 255, 0.08);
+  --bg-btn-op:     rgba(120, 80, 255, 0.25);
+  --bg-btn-eq:     rgba(100, 60, 240, 0.75);
+  --bg-btn-clear:  rgba(200, 50, 50, 0.2);
+  --bg-hover:      rgba(255, 255, 255, 0.13);
+  --bg-hover-op:   rgba(140, 100, 255, 0.35);
+  --bg-hover-eq:   rgba(120, 80, 255, 0.85);
+  --bg-panel:      rgba(20, 18, 35, 0.6);
+  --bg-card:       rgba(255, 255, 255, 0.06);
+  --bg-input:      rgba(255, 255, 255, 0.08);
+  --bg-drawer:     rgba(20, 18, 35, 0.75);
+
+  --text-primary:   rgba(240, 235, 255, 0.95);
+  --text-secondary: rgba(180, 170, 210, 0.7);
+  --text-result:    rgba(200, 180, 255, 0.9);
+  --text-operator:  rgba(180, 150, 255, 0.9);
+  --text-eq:        #ffffff;
+  --text-error:     #f87171;
+
+  --border-subtle:  rgba(255,255,255,0.12);
+  --border-focus:   rgba(160,120,255,0.6);
+
+  --shadow-window:  0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+  --shadow-btn:     0 2px 8px rgba(0,0,0,0.3);
+
+  --radius-window:  20px;
+  --radius-btn:     12px;
+  --radius-card:    12px;
+
+  --titlebar-bg:    transparent;
+  --app-opacity:    1;
+}
+
+/* Glass: frosted blur effect on the app shell */
+[data-theme="glass"] .app {
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  background: var(--bg-app) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+}
+[data-theme="glass"] .display {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="glass"] .btn-grid__btn {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+[data-theme="glass"] .drawer {
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+/* ── Base styles ──────────────────────────────────────────── */
 html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  /* Transparent so Tauri's transparent window shows through */
   background: transparent;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -57,7 +150,6 @@ html, body, #root {
 #root {
   display: flex;
   flex-direction: column;
-  /* No extra padding - app component handles its own rounding */
   border-radius: var(--radius-window);
   overflow: hidden;
 }
@@ -66,3 +158,11 @@ html, body, #root {
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.15); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* Transitions */
+--transition-fast:   120ms ease;
+--transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+:root {
+  --transition-fast:   120ms ease;
+  --transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}

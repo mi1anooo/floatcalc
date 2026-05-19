@@ -24,16 +24,14 @@ const CALC_MODE_LABELS: Record<CalcMode, { label: string; desc: string }> = {
   programmer: { label: 'Programmer', desc: 'Bitwise, HEX, BIN' },
 };
 
-const THEME_LABELS: Record<AppTheme, string> = {
-  dark:   'Always dark',
-  system: 'Follow system',
-};
+const THEME_OPTIONS: { value: AppTheme; label: string; desc: string; preview: string }[] = [
+  { value: 'night', label: 'Night',        desc: 'Deep dark purple',          preview: '#1a1a1e' },
+  { value: 'dark',  label: 'Dark',         desc: 'Microsoft-style grey & blue', preview: '#202020' },
+  { value: 'glass', label: 'Liquid Glass', desc: 'Frosted glass, translucent', preview: 'linear-gradient(135deg,rgba(80,60,140,0.5),rgba(30,28,60,0.5))' },
+];
 
 interface ToggleRowProps {
-  label: string;
-  hint: string;
-  checked: boolean;
-  onToggle: () => void;
+  label: string; hint: string; checked: boolean; onToggle: () => void;
 }
 function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
   return (
@@ -55,20 +53,13 @@ function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
 }
 
 export function SettingsDrawer({
-  settings,
-  onClose,
-  onToggleAlwaysOnTop,
-  onToggleSkipTaskbar,
-  onChangeDefaultMode,
-  onChangeCalcMode,
-  onChangeTheme,
-  onHideToTray,
+  settings, onClose, onToggleAlwaysOnTop, onToggleSkipTaskbar,
+  onChangeDefaultMode, onChangeCalcMode, onChangeTheme, onHideToTray,
 }: SettingsDrawerProps) {
   return (
     <div className="drawer-overlay" onClick={onClose}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="drawer__header">
           <span className="drawer__title">Settings</span>
           <button className="drawer__close" onClick={onClose}>×</button>
@@ -79,22 +70,27 @@ export function SettingsDrawer({
           {/* ── Appearance ── */}
           <div className="drawer__section-title">Appearance</div>
 
-          <div className="drawer__row">
-            <div className="drawer__row-info">
-              <span className="drawer__label">Theme</span>
-              <span className="drawer__hint">Display colour scheme</span>
-            </div>
-            <div className="drawer__seg">
-              {(Object.keys(THEME_LABELS) as AppTheme[]).map((t) => (
-                <button
-                  key={t}
-                  className={`drawer__seg-btn ${settings.theme === t ? 'active' : ''}`}
-                  onClick={() => onChangeTheme(t)}
-                >
-                  {THEME_LABELS[t]}
-                </button>
-              ))}
-            </div>
+          {/* Theme dropdown-style selector */}
+          <div className="drawer__theme-grid">
+            {THEME_OPTIONS.map((t) => (
+              <button
+                key={t.value}
+                className={`drawer__theme-card ${settings.theme === t.value ? 'active' : ''}`}
+                onClick={() => onChangeTheme(t.value)}
+              >
+                <span
+                  className="drawer__theme-swatch"
+                  style={{ background: t.preview }}
+                />
+                <span className="drawer__theme-info">
+                  <span className="drawer__theme-name">{t.label}</span>
+                  <span className="drawer__theme-desc">{t.desc}</span>
+                </span>
+                {settings.theme === t.value && (
+                  <span className="drawer__theme-check">✓</span>
+                )}
+              </button>
+            ))}
           </div>
 
           <div className="drawer__divider" />
@@ -108,14 +104,12 @@ export function SettingsDrawer({
             checked={settings.alwaysOnTop}
             onToggle={onToggleAlwaysOnTop}
           />
-
           <ToggleRow
             label="Hide from taskbar"
             hint="Remove from bottom app bar"
             checked={settings.skipTaskbar ?? false}
             onToggle={onToggleSkipTaskbar}
           />
-
           <div className="drawer__row">
             <button className="drawer__tray-btn" onClick={onHideToTray}>
               <span className="drawer__tray-icon">⬇</span>

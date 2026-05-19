@@ -6,13 +6,16 @@
   align-items: flex-end;
   z-index: 100;
   animation: fadeIn 150ms ease;
+  border-radius: var(--radius-window);
+  overflow: hidden;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .drawer {
   width: 100%;
   max-height: 88vh;
-  background: var(--bg-panel);
+  background: var(--bg-drawer);
+  /* Rounded ONLY on top corners — bottom sits flush with window bottom */
   border-radius: 14px 14px 0 0;
   border-top: 1px solid var(--border-subtle);
   animation: slideUp 200ms cubic-bezier(0.4,0,0.2,1);
@@ -29,6 +32,7 @@
   padding: 13px 16px 9px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  background: var(--bg-drawer);
 }
 .drawer__title {
   font-size: 14px;
@@ -53,6 +57,7 @@
   flex-direction: column;
   gap: 3px;
   overflow-y: auto;
+  background: var(--bg-drawer);
 }
 
 .drawer__section-title {
@@ -63,7 +68,6 @@
   letter-spacing: 0.1em;
   padding: 8px 0 4px;
 }
-
 .drawer__divider {
   height: 1px;
   background: var(--border-subtle);
@@ -120,31 +124,61 @@
 }
 .drawer__toggle.active .drawer__toggle-thumb { transform: translateX(16px); }
 
-/* Segmented control (theme) */
-.drawer__seg {
+/* Theme cards */
+.drawer__theme-grid {
   display: flex;
-  background: var(--bg-btn);
-  border-radius: 7px;
-  padding: 2px;
-  gap: 2px;
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 5px;
 }
-.drawer__seg-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 5px;
+.drawer__theme-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 9px 12px;
   cursor: pointer;
   font-family: inherit;
-  transition: background var(--transition-fast), color var(--transition-fast);
-  white-space: nowrap;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  text-align: left;
+  width: 100%;
 }
-.drawer__seg-btn.active {
-  background: var(--bg-btn-eq);
-  color: white;
+.drawer__theme-card:hover {
+  border-color: rgba(124,58,237,0.4);
+  background: var(--bg-hover);
+}
+.drawer__theme-card.active {
+  border-color: var(--bg-btn-eq);
+  background: rgba(91,61,232,0.1);
+}
+.drawer__theme-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.drawer__theme-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.drawer__theme-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.drawer__theme-desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+.drawer__theme-check {
+  color: var(--bg-btn-eq);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* Tray button */
@@ -179,7 +213,6 @@
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 12px;
   padding: 8px 12px;
   cursor: pointer;
   font-family: inherit;
@@ -205,7 +238,6 @@
   transition: background var(--transition-fast);
 }
 .drawer__mode-option.active .drawer__mode-dot { background: var(--bg-btn-eq); }
-
 .drawer__mode-name {
   display: block;
   font-weight: 600;
@@ -226,4 +258,5 @@
   color: var(--text-secondary);
   border-top: 1px solid var(--border-subtle);
   flex-shrink: 0;
+  background: var(--bg-drawer);
 }
