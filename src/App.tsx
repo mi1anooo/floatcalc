@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { appWindow, currentMonitor } from '@tauri-apps/api/window';
+import { appWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { AppMode, AppSettings, AppTheme, CalcMode, CalculationEntry, Folder } from './types';
@@ -49,8 +49,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   customBackgroundImage: null,
 };
 
-const SCREEN_MARGIN = 10;
-
 function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
@@ -60,10 +58,9 @@ let activeNativeWindowEffect: 'none' | 'frosted' = 'none';
 async function setNativeWindowEffect(theme: AppTheme) {
   const nextEffect: 'none' | 'frosted' = theme === 'frosted' ? 'frosted' : 'none';
 
-  // Important: do not call clear_blur on normal launch for regular themes.
-  // On Windows, forcing clear on an already-transparent window can leave an opaque rectangle.
+  // Only switch the native effect when the user explicitly changes Frosted Glass on/off.
+  // Do not touch native blur while resizing/mode switching.
   if (nextEffect === activeNativeWindowEffect) return;
-  if (nextEffect === 'none' && activeNativeWindowEffect !== 'frosted') return;
 
   try {
     await invoke('set_window_effect', { effect: nextEffect });
@@ -87,34 +84,6 @@ function applyThemeToDom(theme: AppTheme, customBackgroundImage?: string | null)
   }
 }
 
-async function clampWindowToScreen() {
-  const { PhysicalPosition } = await import('@tauri-apps/api/window');
-
-  const monitor = await currentMonitor();
-  if (!monitor) return;
-
-  const position = await appWindow.outerPosition();
-  const size = await appWindow.outerSize();
-
-  const minX = monitor.position.x + SCREEN_MARGIN;
-  const minY = monitor.position.y + SCREEN_MARGIN;
-
-  const maxX = monitor.position.x + monitor.size.width - size.width - SCREEN_MARGIN;
-  const maxY = monitor.position.y + monitor.size.height - size.height - SCREEN_MARGIN;
-
-  const safeMaxX = Math.max(minX, maxX);
-  const safeMaxY = Math.max(minY, maxY);
-
-  const nextX = Math.min(Math.max(position.x, minX), safeMaxX);
-  const nextY = Math.min(Math.max(position.y, minY), safeMaxY);
-
-  if (nextX !== position.x || nextY !== position.y) {
-    await appWindow.setPosition(
-      new PhysicalPosition(Math.round(nextX), Math.round(nextY))
-    );
-  }
-}
-
 export default function App() {
   const [expression, setExpression] = useState('');
   const [preview,    setPreview]    = useState('');
@@ -135,11 +104,11 @@ export default function App() {
     const { LogicalSize } = await import('@tauri-apps/api/window');
     const { width, height } = MODE_SIZE[m][c];
 
-    await appWindow.setSize(new LogicalSize(width, height));
-
-    // Give Windows a moment to apply the new size before checking position.
-    await new Promise((resolve) => setTimeout(resolve, 40));
-    await clampWindowToScreen();
+    try {
+      await appWindow.setSize(new LogicalSize(width, height));
+    } catch (error) {
+      console.error('Failed to resize FloatCalc window:', error);
+    }
   }, []);
 
   // Load persisted data.
@@ -169,10 +138,14 @@ export default function App() {
   useEffect(() => { saveHistory(history); }, [history]);
   useEffect(() => { saveFolders(folders); }, [folders]);
 
-  const switchMode = useCallback(async (newMode: AppMode) => {
+  const switchMode = useCallback((newMode: AppMode) => {
     const calcMode = settingsRef.current.calcMode;
+
+    // Update React immediately, then resize the native window in the background.
+    // This prevents the UI from feeling frozen if Windows takes a moment to resize.
     setMode(newMode);
-    await applyWindowSize(newMode, calcMode);
+    void applyWindowSize(newMode, calcMode);
+
     setSettings((prev) => {
       const next = { ...prev, lastMode: newMode };
       saveSettings(next);
@@ -180,26 +153,28 @@ export default function App() {
     });
   }, [applyWindowSize]);
 
-  const handleMenuOpen = useCallback(async () => {
-    const currentMode = settingsRef.current.lastMode;
-    if (currentMode === 'compact') {
+  const handleMenuOpen = useCallback(() => {
+    // Open settings immediately. Do not wait for native window resizing.
+    setShowMenu(true);
+
+    if (mode === 'compact') {
       modeBeforeSettings.current = 'compact';
       const calcMode = settingsRef.current.calcMode;
-      await applyWindowSize('regular', calcMode);
       setMode('regular');
+      void applyWindowSize('regular', calcMode);
     } else {
       modeBeforeSettings.current = null;
     }
-    setShowMenu(true);
-  }, [applyWindowSize]);
+  }, [mode, applyWindowSize]);
 
-  const handleMenuClose = useCallback(async () => {
+  const handleMenuClose = useCallback(() => {
     setShowMenu(false);
+
     if (modeBeforeSettings.current === 'compact') {
       modeBeforeSettings.current = null;
       const calcMode = settingsRef.current.calcMode;
-      await applyWindowSize('compact', calcMode);
       setMode('compact');
+      void applyWindowSize('compact', calcMode);
       setSettings((prev) => {
         const next = { ...prev, lastMode: 'compact' as AppMode };
         saveSettings(next);
@@ -281,9 +256,9 @@ export default function App() {
     setSettings((prev) => { const u = { ...prev, defaultMode }; saveSettings(u); return u; });
   }, []);
 
-  const handleChangeCalcMode = useCallback(async (calcMode: CalcMode) => {
+  const handleChangeCalcMode = useCallback((calcMode: CalcMode) => {
     setSettings((prev) => { const u = { ...prev, calcMode }; saveSettings(u); return u; });
-    await applyWindowSize(mode, calcMode);
+    void applyWindowSize(mode, calcMode);
     setExpression(''); setPreview(''); setIsError(false);
   }, [mode, applyWindowSize]);
 
