@@ -29,8 +29,8 @@ const CALC_MODE_LABELS: Record<CalcMode, { label: string; desc: string }> = {
 const THEME_OPTIONS: { value: AppTheme; label: string; desc: string; preview: string }[] = [
   { value: 'night',   label: 'Night',            desc: 'Deep dark purple',           preview: '#1a1a1e' },
   { value: 'dark',    label: 'Dark',             desc: 'Neutral charcoal grey',      preview: '#202020' },
-  { value: 'glass',   label: 'Glass',            desc: 'Transparent tint, no blur',  preview: 'linear-gradient(135deg,rgba(80,60,140,0.55),rgba(30,28,60,0.45))' },
-  { value: 'frosted', label: 'Frosted Glass',    desc: 'Blurred desktop background', preview: 'linear-gradient(135deg,rgba(196,181,253,0.42),rgba(26,26,30,0.50))' },
+  { value: 'glass',   label: 'Liquid Glass',     desc: 'Original translucent glass', preview: 'linear-gradient(135deg,rgba(80,60,140,0.5),rgba(30,28,60,0.5))' },
+  { value: 'frosted', label: 'Frosted Glass',    desc: 'Native blurred background', preview: 'linear-gradient(135deg,rgba(196,181,253,0.42),rgba(26,26,30,0.50))' },
   { value: 'image',   label: 'Image Background', desc: 'Use your own image',         preview: 'linear-gradient(135deg,#2b1b4a,#0f0f14)' },
 ];
 
@@ -60,6 +60,53 @@ function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
   );
 }
 
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result);
+      else reject(new Error('Invalid image result'));
+    };
+    reader.onerror = () => reject(new Error('Could not read image file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Could not load image'));
+    image.src = src;
+  });
+}
+
+async function prepareBackgroundImage(file: File): Promise<string> {
+  const rawDataUrl = await readFileAsDataUrl(file);
+
+  // Keep GIF/SVG as-is. Canvas conversion breaks animation/vector data.
+  if (file.type === 'image/gif' || file.type === 'image/svg+xml') {
+    return rawDataUrl;
+  }
+
+  const image = await loadImage(rawDataUrl);
+  const maxDimension = 1600;
+  const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return rawDataUrl;
+
+  ctx.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', 0.88);
+}
+
 export function SettingsDrawer({
   settings,
   onClose,
@@ -75,7 +122,7 @@ export function SettingsDrawer({
 
   const pickImage = () => fileInputRef.current?.click();
 
-  const handleImageFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
 
@@ -85,19 +132,17 @@ export function SettingsDrawer({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        onChangeBackgroundImage(reader.result);
-      }
-    };
-    reader.onerror = () => window.alert('Could not load that image.');
-    reader.readAsDataURL(file);
+    try {
+      const imageDataUrl = await prepareBackgroundImage(file);
+      onChangeBackgroundImage(imageDataUrl);
+    } catch {
+      window.alert('Could not load that image. Try a JPG or PNG file.');
+    }
   };
 
   const previewBackground = (value: AppTheme, fallback: string) => {
     if (value === 'image' && settings.customBackgroundImage) {
-      return `linear-gradient(rgba(0,0,0,0.18),rgba(0,0,0,0.18)), url(${settings.customBackgroundImage}) center / cover`;
+      return `linear-gradient(rgba(0,0,0,0.18),rgba(0,0,0,0.18)), url(${JSON.stringify(settings.customBackgroundImage)}) center / cover`;
     }
     return fallback;
   };

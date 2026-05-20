@@ -55,11 +55,19 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+let activeNativeWindowEffect: 'none' | 'frosted' = 'none';
+
 async function setNativeWindowEffect(theme: AppTheme) {
+  const nextEffect: 'none' | 'frosted' = theme === 'frosted' ? 'frosted' : 'none';
+
+  // Important: do not call clear_blur on normal launch for regular themes.
+  // On Windows, forcing clear on an already-transparent window can leave an opaque rectangle.
+  if (nextEffect === activeNativeWindowEffect) return;
+  if (nextEffect === 'none' && activeNativeWindowEffect !== 'frosted') return;
+
   try {
-    await invoke('set_window_effect', {
-      effect: theme === 'frosted' ? 'frosted' : 'none',
-    });
+    await invoke('set_window_effect', { effect: nextEffect });
+    activeNativeWindowEffect = nextEffect;
   } catch {
     // Ignore in browser/dev fallback. The CSS theme still applies.
   }
@@ -69,10 +77,13 @@ function applyThemeToDom(theme: AppTheme, customBackgroundImage?: string | null)
   document.documentElement.setAttribute('data-theme', theme);
 
   if (customBackgroundImage) {
-    const safeImage = customBackgroundImage.replace(/"/g, '\\"');
-    document.documentElement.style.setProperty('--custom-bg-image', `url("${safeImage}")`);
+    // JSON.stringify gives CSS url() a safe quoted string, including data URLs.
+    document.documentElement.style.setProperty(
+      '--custom-bg-image',
+      `url(${JSON.stringify(customBackgroundImage)})`
+    );
   } else {
-    document.documentElement.style.removeProperty('--custom-bg-image');
+    document.documentElement.style.setProperty('--custom-bg-image', 'none');
   }
 }
 

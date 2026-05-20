@@ -5,6 +5,7 @@
   min-height: 0;
   width: 100%;
   background: var(--bg-app);
+  background-clip: padding-box;
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-window);
   border: none;
@@ -13,23 +14,37 @@
   position: relative;
   box-sizing: border-box;
   isolation: isolate;
+
+  /* This is the important corner fix. It forces the webview content itself
+     to be clipped to rounded corners, instead of relying only on border-radius. */
+  clip-path: inset(0 round var(--radius-window));
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
-/* Top inner glow */
+/* Image backgrounds live on a clipped pseudo layer so they cannot bleed into square corners. */
 .app::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  inset: 0;
+  border-radius: inherit;
   pointer-events: none;
-  z-index: 998;
+  z-index: 0;
+  background: transparent;
 }
 
-/* Reliable rounded outline drawn inside the transparent Tauri window.
-   A normal border can get clipped on transparent undecorated windows, especially in compact mode. */
+[data-theme="image"] .app {
+  background: transparent;
+}
+
+[data-theme="image"] .app::before {
+  background-image:
+    linear-gradient(180deg, rgba(8,8,12,0.38), rgba(8,8,12,0.76)),
+    var(--custom-bg-image);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+}
+
 .app::after {
   content: '';
   position: absolute;
@@ -45,4 +60,14 @@
 /* Compact: floating pill/card bar */
 .app--compact {
   border-radius: 16px;
+}
+
+
+.app > .titlebar,
+.app > .display,
+.app > .btn-grid,
+.app > .history-panel,
+.app > .drawer-overlay {
+  position: relative;
+  z-index: 1;
 }
