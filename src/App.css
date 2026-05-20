@@ -5,7 +5,6 @@
   min-height: 0;
   width: 100%;
   background: var(--bg-app);
-  background-clip: padding-box;
   border-radius: var(--radius-window);
   box-shadow: var(--shadow-window);
   border: none;
@@ -14,31 +13,13 @@
   position: relative;
   box-sizing: border-box;
   isolation: isolate;
-
-  /* This is the important corner fix. It forces the webview content itself
-     to be clipped to rounded corners, instead of relying only on border-radius. */
-  clip-path: inset(0 round var(--radius-window));
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }
 
-/* Image backgrounds live on a clipped pseudo layer so they cannot bleed into square corners. */
-.app::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
-  background: transparent;
-}
-
+/* Custom image background is applied directly to the rounded app surface.
+   This avoids the square-corner bleed that happened with the pseudo-layer version. */
 [data-theme="image"] .app {
-  background: transparent;
-}
-
-[data-theme="image"] .app::before {
   background-image:
-    linear-gradient(180deg, rgba(8,8,12,0.38), rgba(8,8,12,0.76)),
+    linear-gradient(180deg, rgba(8, 8, 12, 0.30), rgba(8, 8, 12, 0.72)),
     var(--custom-bg-image);
   background-size: cover, cover;
   background-position: center, center;
@@ -54,20 +35,26 @@
     inset 0 0 0 1px var(--window-outline, rgba(255,255,255,0.11)),
     inset 0 1px 0 rgba(255,255,255,0.08);
   pointer-events: none;
-  z-index: 999;
+  z-index: 50;
 }
 
-/* Compact: floating pill/card bar */
 .app--compact {
   border-radius: 16px;
 }
 
-
 .app > .titlebar,
 .app > .display,
 .app > .btn-grid,
-.app > .history-panel,
-.app > .drawer-overlay {
+.app > .history-panel {
   position: relative;
   z-index: 1;
+}
+
+/* Settings must overlay the calculator, not become part of the normal layout.
+   The previous patch accidentally put .drawer-overlay in the relative z-index group,
+   which made settings appear underneath the calculator/history content. */
+.app > .drawer-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
 }

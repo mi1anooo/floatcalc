@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appWindow } from '@tauri-apps/api/window';
-import { invoke } from '@tauri-apps/api/tauri';
 
 import { AppMode, AppSettings, AppTheme, CalcMode, CalculationEntry, Folder } from './types';
 import { evaluate } from './utils/calculator';
@@ -18,8 +17,6 @@ import { SettingsDrawer } from './components/SettingsDrawer';
 import './styles/globals.css';
 import './App.css';
 
-// Precise window heights per mode × calcMode.
-// Compact needs enough room for title bar + display so text does not clip.
 const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: number }>> = {
   regular: {
     standard:   { width: 320, height: 430 },
@@ -53,28 +50,10 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-let activeNativeWindowEffect: 'none' | 'frosted' = 'none';
-
-async function setNativeWindowEffect(theme: AppTheme) {
-  const nextEffect: 'none' | 'frosted' = theme === 'frosted' ? 'frosted' : 'none';
-
-  // Only switch the native effect when the user explicitly changes Frosted Glass on/off.
-  // Do not touch native blur while resizing/mode switching.
-  if (nextEffect === activeNativeWindowEffect) return;
-
-  try {
-    await invoke('set_window_effect', { effect: nextEffect });
-    activeNativeWindowEffect = nextEffect;
-  } catch {
-    // Ignore in browser/dev fallback. The CSS theme still applies.
-  }
-}
-
 function applyThemeToDom(theme: AppTheme, customBackgroundImage?: string | null) {
   document.documentElement.setAttribute('data-theme', theme);
 
   if (customBackgroundImage) {
-    // JSON.stringify gives CSS url() a safe quoted string, including data URLs.
     document.documentElement.style.setProperty(
       '--custom-bg-image',
       `url(${JSON.stringify(customBackgroundImage)})`
@@ -96,27 +75,29 @@ export default function App() {
   const [showMenu, setShowMenu] = useState(false);
 
   const modeBeforeSettings = useRef<AppMode | null>(null);
-
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const applyWindowSize = useCallback(async (m: AppMode, c: CalcMode) => {
-    const { LogicalSize } = await import('@tauri-apps/api/window');
+  const applyWindowSize = useCallback((m: AppMode, c: CalcMode) => {
     const { width, height } = MODE_SIZE[m][c];
 
-    try {
-      await appWindow.setSize(new LogicalSize(width, height));
-    } catch (error) {
-      console.error('Failed to resize FloatCalc window:', error);
-    }
+    void import('@tauri-apps/api/window')
+      .then(({ LogicalSize }) => appWindow.setSize(new LogicalSize(width, height)))
+      .catch((error) => {
+        console.warn('Could not resize FloatCalc window:', error);
+      });
   }, []);
 
   // Load persisted data.
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
       const [savedSettings, savedHistory, savedFolders] = await Promise.all([
         loadSettings(), loadHistory(), loadFolders(),
       ]);
+
+      if (!mounted) return;
 
       const s: AppSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
       setSettings(s);
@@ -124,47 +105,44 @@ export default function App() {
       if (savedFolders) setFolders(savedFolders);
 
       const startMode = s.lastMode ?? s.defaultMode;
-      await applyWindowSize(startMode, s.calcMode);
       setMode(startMode);
+      applyWindowSize(startMode, s.calcMode);
 
-      await appWindow.setAlwaysOnTop(s.alwaysOnTop);
-      if (s.skipTaskbar) await appWindow.setSkipTaskbar(true);
+      void appWindow.setAlwaysOnTop(s.alwaysOnTop).catch(console.warn);
+      if (s.skipTaskbar) void appWindow.setSkipTaskbar(true).catch(console.warn);
 
       applyThemeToDom(s.theme, s.customBackgroundImage);
-      await setNativeWindowEffect(s.theme);
     })();
+
+    return () => { mounted = false; };
   }, [applyWindowSize]);
 
-  useEffect(() => { saveHistory(history); }, [history]);
-  useEffect(() => { saveFolders(folders); }, [folders]);
+  useEffect(() => { void saveHistory(history); }, [history]);
+  useEffect(() => { void saveFolders(folders); }, [folders]);
 
   const switchMode = useCallback((newMode: AppMode) => {
     const calcMode = settingsRef.current.calcMode;
-
-    // Update React immediately, then resize the native window in the background.
-    // This prevents the UI from feeling frozen if Windows takes a moment to resize.
+    setShowMenu(false);
     setMode(newMode);
-    void applyWindowSize(newMode, calcMode);
-
+    applyWindowSize(newMode, calcMode);
     setSettings((prev) => {
       const next = { ...prev, lastMode: newMode };
-      saveSettings(next);
+      void saveSettings(next);
       return next;
     });
   }, [applyWindowSize]);
 
   const handleMenuOpen = useCallback(() => {
-    // Open settings immediately. Do not wait for native window resizing.
-    setShowMenu(true);
-
     if (mode === 'compact') {
       modeBeforeSettings.current = 'compact';
       const calcMode = settingsRef.current.calcMode;
       setMode('regular');
-      void applyWindowSize('regular', calcMode);
+      applyWindowSize('regular', calcMode);
     } else {
       modeBeforeSettings.current = null;
     }
+
+    setShowMenu(true);
   }, [mode, applyWindowSize]);
 
   const handleMenuClose = useCallback(() => {
@@ -174,10 +152,10 @@ export default function App() {
       modeBeforeSettings.current = null;
       const calcMode = settingsRef.current.calcMode;
       setMode('compact');
-      void applyWindowSize('compact', calcMode);
+      applyWindowSize('compact', calcMode);
       setSettings((prev) => {
         const next = { ...prev, lastMode: 'compact' as AppMode };
-        saveSettings(next);
+        void saveSettings(next);
         return next;
       });
     }
@@ -218,7 +196,8 @@ export default function App() {
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+      const target = e.target as HTMLElement | null;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
       if (e.key >= '0' && e.key <= '9') { handleInput(e.key); return; }
       if (e.key === '+' || e.key === '-') { handleInput(e.key); return; }
       if (e.key === '*') { handleInput('×'); return; }
@@ -235,47 +214,45 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleInput, handleDelete, handleClear, computeResult]);
 
-  const handleToggleAlwaysOnTop = useCallback(async () => {
+  const handleToggleAlwaysOnTop = useCallback(() => {
     const next = !settingsRef.current.alwaysOnTop;
-    await appWindow.setAlwaysOnTop(next);
-    setSettings((prev) => { const u = { ...prev, alwaysOnTop: next }; saveSettings(u); return u; });
+    void appWindow.setAlwaysOnTop(next).catch(console.warn);
+    setSettings((prev) => { const u = { ...prev, alwaysOnTop: next }; void saveSettings(u); return u; });
   }, []);
 
-  const handleToggleSkipTaskbar = useCallback(async () => {
+  const handleToggleSkipTaskbar = useCallback(() => {
     const next = !(settingsRef.current.skipTaskbar ?? false);
-    await appWindow.setSkipTaskbar(next);
-    setSettings((prev) => { const u = { ...prev, skipTaskbar: next }; saveSettings(u); return u; });
+    void appWindow.setSkipTaskbar(next).catch(console.warn);
+    setSettings((prev) => { const u = { ...prev, skipTaskbar: next }; void saveSettings(u); return u; });
   }, []);
 
-  const handleHideToTray = useCallback(async () => {
+  const handleHideToTray = useCallback(() => {
     setShowMenu(false);
-    await appWindow.hide();
+    void appWindow.hide().catch(console.warn);
   }, []);
 
   const handleChangeDefaultMode = useCallback((defaultMode: AppMode) => {
-    setSettings((prev) => { const u = { ...prev, defaultMode }; saveSettings(u); return u; });
+    setSettings((prev) => { const u = { ...prev, defaultMode }; void saveSettings(u); return u; });
   }, []);
 
   const handleChangeCalcMode = useCallback((calcMode: CalcMode) => {
-    setSettings((prev) => { const u = { ...prev, calcMode }; saveSettings(u); return u; });
-    void applyWindowSize(mode, calcMode);
+    setSettings((prev) => { const u = { ...prev, calcMode }; void saveSettings(u); return u; });
+    applyWindowSize(mode, calcMode);
     setExpression(''); setPreview(''); setIsError(false);
   }, [mode, applyWindowSize]);
 
-  const handleChangeTheme = useCallback(async (theme: AppTheme) => {
+  const handleChangeTheme = useCallback((theme: AppTheme) => {
     const currentImage = settingsRef.current.customBackgroundImage ?? null;
     applyThemeToDom(theme, currentImage);
-    await setNativeWindowEffect(theme);
-    setSettings((prev) => { const u = { ...prev, theme }; saveSettings(u); return u; });
+    setSettings((prev) => { const u = { ...prev, theme }; void saveSettings(u); return u; });
   }, []);
 
-  const handleChangeBackgroundImage = useCallback(async (imageDataUrl: string | null) => {
+  const handleChangeBackgroundImage = useCallback((imageDataUrl: string | null) => {
     const nextTheme: AppTheme = imageDataUrl ? 'image' : 'night';
     applyThemeToDom(nextTheme, imageDataUrl);
-    await setNativeWindowEffect(nextTheme);
     setSettings((prev) => {
       const u = { ...prev, theme: nextTheme, customBackgroundImage: imageDataUrl };
-      saveSettings(u);
+      void saveSettings(u);
       return u;
     });
   }, []);
