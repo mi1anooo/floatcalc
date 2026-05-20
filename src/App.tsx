@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { appWindow, currentMonitor } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/tauri';
 
 import { AppMode, AppSettings, AppTheme, CalcMode, CalculationEntry, Folder } from './types';
 import { evaluate } from './utils/calculator';
@@ -17,8 +18,8 @@ import { SettingsDrawer } from './components/SettingsDrawer';
 import './styles/globals.css';
 import './App.css';
 
-// ── Precise window heights per mode × calcMode ─────────────
-// Heights are tuned to content with 8px bottom padding.
+// Precise window heights per mode × calcMode.
+// Compact needs enough room for title bar + display so text does not clip.
 const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: number }>> = {
   regular: {
     standard:   { width: 320, height: 430 },
@@ -26,8 +27,6 @@ const MODE_SIZE: Record<AppMode, Record<CalcMode, { width: number; height: numbe
     programmer: { width: 320, height: 505 },
   },
   compact: {
-    // 96px was too short once the title bar + two-line display were rendered.
-    // 128px gives the display enough vertical room without losing the compact feel.
     standard:   { width: 320, height: 128 },
     scientific: { width: 320, height: 128 },
     programmer: { width: 320, height: 128 },
@@ -47,8 +46,35 @@ const DEFAULT_SETTINGS: AppSettings = {
   lastPosition: null,
   calcMode:     'standard',
   theme:        'night',
+  customBackgroundImage: null,
 };
+
 const SCREEN_MARGIN = 10;
+
+function uid(): string {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+async function setNativeWindowEffect(theme: AppTheme) {
+  try {
+    await invoke('set_window_effect', {
+      effect: theme === 'frosted' ? 'frosted' : 'none',
+    });
+  } catch {
+    // Ignore in browser/dev fallback. The CSS theme still applies.
+  }
+}
+
+function applyThemeToDom(theme: AppTheme, customBackgroundImage?: string | null) {
+  document.documentElement.setAttribute('data-theme', theme);
+
+  if (customBackgroundImage) {
+    const safeImage = customBackgroundImage.replace(/"/g, '\\"');
+    document.documentElement.style.setProperty('--custom-bg-image', `url("${safeImage}")`);
+  } else {
+    document.documentElement.style.removeProperty('--custom-bg-image');
+  }
+}
 
 async function clampWindowToScreen() {
   const { PhysicalPosition } = await import('@tauri-apps/api/window');
@@ -65,8 +91,6 @@ async function clampWindowToScreen() {
   const maxX = monitor.position.x + monitor.size.width - size.width - SCREEN_MARGIN;
   const maxY = monitor.position.y + monitor.size.height - size.height - SCREEN_MARGIN;
 
-  // If the app is wider/taller than the current monitor for any reason,
-  // do not allow the clamp range to invert.
   const safeMaxX = Math.max(minX, maxX);
   const safeMaxY = Math.max(minY, maxY);
 
@@ -80,11 +104,6 @@ async function clampWindowToScreen() {
   }
 }
 
-
-function uid(): string {
-  return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
-
 export default function App() {
   const [expression, setExpression] = useState('');
   const [preview,    setPreview]    = useState('');
@@ -96,18 +115,29 @@ export default function App() {
   const [folders,  setFolders]  = useState<Folder[]>([]);
   const [showMenu, setShowMenu] = useState(false);
 
-  // Track the mode we were in BEFORE opening settings from compact
   const modeBeforeSettings = useRef<AppMode | null>(null);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  // ── Load persisted data ─────────────────────────────────
+  const applyWindowSize = useCallback(async (m: AppMode, c: CalcMode) => {
+    const { LogicalSize } = await import('@tauri-apps/api/window');
+    const { width, height } = MODE_SIZE[m][c];
+
+    await appWindow.setSize(new LogicalSize(width, height));
+
+    // Give Windows a moment to apply the new size before checking position.
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    await clampWindowToScreen();
+  }, []);
+
+  // Load persisted data.
   useEffect(() => {
     (async () => {
       const [savedSettings, savedHistory, savedFolders] = await Promise.all([
         loadSettings(), loadHistory(), loadFolders(),
       ]);
+
       const s: AppSettings = { ...DEFAULT_SETTINGS, ...savedSettings };
       setSettings(s);
       if (savedHistory) setHistory(savedHistory);
@@ -120,32 +150,13 @@ export default function App() {
       await appWindow.setAlwaysOnTop(s.alwaysOnTop);
       if (s.skipTaskbar) await appWindow.setSkipTaskbar(true);
 
-      // Apply theme on launch
-      applyTheme(s.theme);
+      applyThemeToDom(s.theme, s.customBackgroundImage);
+      await setNativeWindowEffect(s.theme);
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [applyWindowSize]);
 
   useEffect(() => { saveHistory(history); }, [history]);
   useEffect(() => { saveFolders(folders); }, [folders]);
-
-  // ── Theme application ───────────────────────────────────
-  const applyTheme = (theme: AppTheme) => {
-    document.documentElement.setAttribute('data-theme', theme);
-  };
-
-  // ── Window sizing ───────────────────────────────────────
-  const applyWindowSize = useCallback(async (m: AppMode, c: CalcMode) => {
-    const { LogicalSize } = await import('@tauri-apps/api/window');
-    const { width, height } = MODE_SIZE[m][c];
-
-    await appWindow.setSize(new LogicalSize(width, height));
-
-    // Windows needs a short beat to apply the new size before we read bounds.
-    await new Promise((resolve) => setTimeout(resolve, 40));
-
-    await clampWindowToScreen();
-  }, []);
 
   const switchMode = useCallback(async (newMode: AppMode) => {
     const calcMode = settingsRef.current.calcMode;
@@ -158,13 +169,10 @@ export default function App() {
     });
   }, [applyWindowSize]);
 
-  // ── Open settings: always expand to regular first ───────
   const handleMenuOpen = useCallback(async () => {
     const currentMode = settingsRef.current.lastMode;
     if (currentMode === 'compact') {
-      // Remember we came from compact
       modeBeforeSettings.current = 'compact';
-      // Expand to regular so settings has room
       const calcMode = settingsRef.current.calcMode;
       await applyWindowSize('regular', calcMode);
       setMode('regular');
@@ -174,7 +182,6 @@ export default function App() {
     setShowMenu(true);
   }, [applyWindowSize]);
 
-  // ── Close settings: restore compact if we came from it ──
   const handleMenuClose = useCallback(async () => {
     setShowMenu(false);
     if (modeBeforeSettings.current === 'compact') {
@@ -190,7 +197,7 @@ export default function App() {
     }
   }, [applyWindowSize]);
 
-  // ── Live preview ────────────────────────────────────────
+  // Live preview.
   useEffect(() => {
     if (!expression) { setPreview(''); setIsError(false); return; }
     try {
@@ -202,7 +209,6 @@ export default function App() {
     }
   }, [expression]);
 
-  // ── Compute result ──────────────────────────────────────
   const computeResult = useCallback(() => {
     if (!expression || isError) return;
     try {
@@ -217,7 +223,6 @@ export default function App() {
     } catch { setIsError(true); setPreview('Invalid expression'); }
   }, [expression, isError]);
 
-  // ── Input handlers ──────────────────────────────────────
   const handleInput  = useCallback((v: string) => {
     if (v === '√') { setExpression((p) => p + '√('); return; }
     setExpression((p) => p + v);
@@ -225,7 +230,6 @@ export default function App() {
   const handleClear  = useCallback(() => { setExpression(''); setPreview(''); setIsError(false); }, []);
   const handleDelete = useCallback(() => setExpression((p) => p.slice(0, -1)), []);
 
-  // ── Keyboard ────────────────────────────────────────────
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
@@ -245,7 +249,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleInput, handleDelete, handleClear, computeResult]);
 
-  // ── Settings handlers ───────────────────────────────────
   const handleToggleAlwaysOnTop = useCallback(async () => {
     const next = !settingsRef.current.alwaysOnTop;
     await appWindow.setAlwaysOnTop(next);
@@ -273,12 +276,24 @@ export default function App() {
     setExpression(''); setPreview(''); setIsError(false);
   }, [mode, applyWindowSize]);
 
-  const handleChangeTheme = useCallback((theme: AppTheme) => {
-    applyTheme(theme);
+  const handleChangeTheme = useCallback(async (theme: AppTheme) => {
+    const currentImage = settingsRef.current.customBackgroundImage ?? null;
+    applyThemeToDom(theme, currentImage);
+    await setNativeWindowEffect(theme);
     setSettings((prev) => { const u = { ...prev, theme }; saveSettings(u); return u; });
   }, []);
 
-  // ── History handlers ────────────────────────────────────
+  const handleChangeBackgroundImage = useCallback(async (imageDataUrl: string | null) => {
+    const nextTheme: AppTheme = imageDataUrl ? 'image' : 'night';
+    applyThemeToDom(nextTheme, imageDataUrl);
+    await setNativeWindowEffect(nextTheme);
+    setSettings((prev) => {
+      const u = { ...prev, theme: nextTheme, customBackgroundImage: imageDataUrl };
+      saveSettings(u);
+      return u;
+    });
+  }, []);
+
   const handleDeleteEntry  = useCallback((id: string) =>
     setHistory((p) => p.filter((e) => e.id !== id)), []);
   const handleRenameEntry  = useCallback((id: string, name: string) =>
@@ -291,7 +306,6 @@ export default function App() {
   const handleLoadEntry    = useCallback((entry: CalculationEntry) =>
     setExpression(entry.result), []);
 
-  // ── Folder handlers ─────────────────────────────────────
   const handleCreateFolder = useCallback((name: string) =>
     setFolders((p) => [...p, { id: uid(), name, createdAt: Date.now() }]), []);
   const handleDeleteFolder = useCallback((id: string) => {
@@ -301,7 +315,6 @@ export default function App() {
   const handleRenameFolder = useCallback((id: string, name: string) =>
     setFolders((p) => p.map((f) => f.id === id ? { ...f, name } : f)), []);
 
-  // ───────────────────────────────────────────────────────
   return (
     <div className={`app app--${mode}`}>
       <TitleBar mode={mode} onModeChange={switchMode} onMenuOpen={handleMenuOpen} />
@@ -348,6 +361,7 @@ export default function App() {
           onChangeDefaultMode={handleChangeDefaultMode}
           onChangeCalcMode={handleChangeCalcMode}
           onChangeTheme={handleChangeTheme}
+          onChangeBackgroundImage={handleChangeBackgroundImage}
           onHideToTray={handleHideToTray}
         />
       )}

@@ -13,7 +13,8 @@
   flex-shrink: 0;
 }
 
-/* Compact: floating display with enough height for expression + preview/result */
+/* Compact mode needs enough vertical room for expression + preview.
+   Keep a real card outline instead of making it flush to the window edge. */
 .display--compact {
   min-height: 78px;
   margin: 0 10px 10px;
@@ -39,11 +40,29 @@
   font-weight: 400;
   opacity: 0.85;
   font-variant-numeric: tabular-nums;
-  /* Ensure preview line never clips */
   line-height: 1.4;
   padding-bottom: 1px;
 }
 .display__preview--error { color: var(--text-error); }
+
+.display--compact .display__expression {
+  font-size: 26px;
+  line-height: 1.15;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.display--compact .display__preview {
+  font-size: 13px;
+  line-height: 1.25;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-bottom: 0;
+}
 
 /* Programmer mode extras */
 .display__prog-info {
@@ -68,25 +87,4 @@
   font-weight: 700;
   font-size: 9px;
   letter-spacing: 0.05em;
-}
-
-
-/* Compact mode text should never clip vertically. */
-.display--compact .display__expression {
-  font-size: 26px;
-  line-height: 1.15;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.display--compact .display__preview {
-  font-size: 13px;
-  line-height: 1.25;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-bottom: 0;
 }

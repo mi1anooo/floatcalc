@@ -1,6 +1,6 @@
 export type AppMode   = 'regular' | 'compact' | 'history';
 export type CalcMode  = 'standard' | 'scientific' | 'programmer';
-export type AppTheme  = 'night' | 'dark' | 'glass';
+export type AppTheme  = 'night' | 'dark' | 'glass' | 'frosted' | 'image';
 
 export interface CalculationEntry {
   id: string;
@@ -26,4 +26,5 @@ export interface AppSettings {
   lastPosition: { x: number; y: number } | null;
   calcMode:     CalcMode;
   theme:        AppTheme;
+  customBackgroundImage?: string | null;
 }

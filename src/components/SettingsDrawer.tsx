@@ -1,3 +1,4 @@
+import { ChangeEvent, useRef } from 'react';
 import { AppMode, AppSettings, AppTheme, CalcMode } from '../types';
 import './SettingsDrawer.css';
 
@@ -9,6 +10,7 @@ interface SettingsDrawerProps {
   onChangeDefaultMode: (mode: AppMode) => void;
   onChangeCalcMode: (mode: CalcMode) => void;
   onChangeTheme: (theme: AppTheme) => void;
+  onChangeBackgroundImage: (imageDataUrl: string | null) => void;
   onHideToTray: () => void;
 }
 
@@ -25,14 +27,20 @@ const CALC_MODE_LABELS: Record<CalcMode, { label: string; desc: string }> = {
 };
 
 const THEME_OPTIONS: { value: AppTheme; label: string; desc: string; preview: string }[] = [
-  { value: 'night', label: 'Night',        desc: 'Deep dark purple',          preview: '#1a1a1e' },
-  { value: 'dark',  label: 'Dark',         desc: 'Microsoft-style grey & blue', preview: '#202020' },
-  { value: 'glass', label: 'Liquid Glass', desc: 'Frosted glass, translucent', preview: 'linear-gradient(135deg,rgba(80,60,140,0.5),rgba(30,28,60,0.5))' },
+  { value: 'night',   label: 'Night',            desc: 'Deep dark purple',           preview: '#1a1a1e' },
+  { value: 'dark',    label: 'Dark',             desc: 'Neutral charcoal grey',      preview: '#202020' },
+  { value: 'glass',   label: 'Glass',            desc: 'Transparent tint, no blur',  preview: 'linear-gradient(135deg,rgba(80,60,140,0.55),rgba(30,28,60,0.45))' },
+  { value: 'frosted', label: 'Frosted Glass',    desc: 'Blurred desktop background', preview: 'linear-gradient(135deg,rgba(196,181,253,0.42),rgba(26,26,30,0.50))' },
+  { value: 'image',   label: 'Image Background', desc: 'Use your own image',         preview: 'linear-gradient(135deg,#2b1b4a,#0f0f14)' },
 ];
 
 interface ToggleRowProps {
-  label: string; hint: string; checked: boolean; onToggle: () => void;
+  label: string;
+  hint: string;
+  checked: boolean;
+  onToggle: () => void;
 }
+
 function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
   return (
     <div className="drawer__row">
@@ -53,9 +61,47 @@ function ToggleRow({ label, hint, checked, onToggle }: ToggleRowProps) {
 }
 
 export function SettingsDrawer({
-  settings, onClose, onToggleAlwaysOnTop, onToggleSkipTaskbar,
-  onChangeDefaultMode, onChangeCalcMode, onChangeTheme, onHideToTray,
+  settings,
+  onClose,
+  onToggleAlwaysOnTop,
+  onToggleSkipTaskbar,
+  onChangeDefaultMode,
+  onChangeCalcMode,
+  onChangeTheme,
+  onChangeBackgroundImage,
+  onHideToTray,
 }: SettingsDrawerProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const pickImage = () => fileInputRef.current?.click();
+
+  const handleImageFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      window.alert('Please choose an image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        onChangeBackgroundImage(reader.result);
+      }
+    };
+    reader.onerror = () => window.alert('Could not load that image.');
+    reader.readAsDataURL(file);
+  };
+
+  const previewBackground = (value: AppTheme, fallback: string) => {
+    if (value === 'image' && settings.customBackgroundImage) {
+      return `linear-gradient(rgba(0,0,0,0.18),rgba(0,0,0,0.18)), url(${settings.customBackgroundImage}) center / cover`;
+    }
+    return fallback;
+  };
+
   return (
     <div className="drawer-overlay" onClick={onClose}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
@@ -70,27 +116,53 @@ export function SettingsDrawer({
           {/* ── Appearance ── */}
           <div className="drawer__section-title">Appearance</div>
 
-          {/* Theme dropdown-style selector */}
           <div className="drawer__theme-grid">
-            {THEME_OPTIONS.map((t) => (
+            {THEME_OPTIONS.map((theme) => (
               <button
-                key={t.value}
-                className={`drawer__theme-card ${settings.theme === t.value ? 'active' : ''}`}
-                onClick={() => onChangeTheme(t.value)}
+                key={theme.value}
+                className={`drawer__theme-card ${settings.theme === theme.value ? 'active' : ''}`}
+                onClick={() => {
+                  if (theme.value === 'image' && !settings.customBackgroundImage) {
+                    pickImage();
+                    return;
+                  }
+                  onChangeTheme(theme.value);
+                }}
               >
                 <span
                   className="drawer__theme-swatch"
-                  style={{ background: t.preview }}
+                  style={{ background: previewBackground(theme.value, theme.preview) }}
                 />
                 <span className="drawer__theme-info">
-                  <span className="drawer__theme-name">{t.label}</span>
-                  <span className="drawer__theme-desc">{t.desc}</span>
+                  <span className="drawer__theme-name">{theme.label}</span>
+                  <span className="drawer__theme-desc">{theme.desc}</span>
                 </span>
-                {settings.theme === t.value && (
+                {settings.theme === theme.value && (
                   <span className="drawer__theme-check">✓</span>
                 )}
               </button>
             ))}
+          </div>
+
+          <div className="drawer__image-tools">
+            <input
+              ref={fileInputRef}
+              className="drawer__file-input"
+              type="file"
+              accept="image/*"
+              onChange={handleImageFile}
+            />
+            <button className="drawer__image-btn" onClick={pickImage}>
+              {settings.customBackgroundImage ? 'Change background image' : 'Upload background image'}
+            </button>
+            {settings.customBackgroundImage && (
+              <button
+                className="drawer__image-btn drawer__image-btn--danger"
+                onClick={() => onChangeBackgroundImage(null)}
+              >
+                Remove image
+              </button>
+            )}
           </div>
 
           <div className="drawer__divider" />

@@ -15,7 +15,6 @@
   width: 100%;
   max-height: 88vh;
   background: var(--bg-drawer);
-  /* Rounded ONLY on top corners — bottom sits flush with window bottom */
   border-radius: 14px 14px 0 0;
   border-top: 1px solid var(--border-subtle);
   animation: slideUp 200ms cubic-bezier(0.4,0,0.2,1);
@@ -74,7 +73,6 @@
   margin: 5px 0;
 }
 
-/* Toggle row */
 .drawer__row {
   display: flex;
   align-items: center;
@@ -97,7 +95,6 @@
   color: var(--text-secondary);
 }
 
-/* Toggle switch */
 .drawer__toggle {
   width: 38px;
   height: 22px;
@@ -124,7 +121,6 @@
 }
 .drawer__toggle.active .drawer__toggle-thumb { transform: translateX(16px); }
 
-/* Theme cards */
 .drawer__theme-grid {
   display: flex;
   flex-direction: column;
@@ -158,6 +154,8 @@
   border-radius: 7px;
   flex-shrink: 0;
   border: 1px solid rgba(255,255,255,0.1);
+  background-size: cover !important;
+  background-position: center !important;
 }
 .drawer__theme-info {
   display: flex;
@@ -181,7 +179,36 @@
   flex-shrink: 0;
 }
 
-/* Tray button */
+.drawer__image-tools {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 7px;
+}
+.drawer__file-input {
+  display: none;
+}
+.drawer__image-btn {
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
+}
+.drawer__image-btn:hover {
+  border-color: rgba(124,58,237,0.45);
+  background: rgba(91,61,232,0.10);
+}
+.drawer__image-btn--danger {
+  color: var(--text-error);
+}
+
 .drawer__tray-btn {
   display: flex;
   align-items: center;
@@ -204,7 +231,6 @@
 }
 .drawer__tray-icon { font-size: 14px; }
 
-/* Mode option buttons */
 .drawer__mode-option {
   display: flex;
   align-items: center;

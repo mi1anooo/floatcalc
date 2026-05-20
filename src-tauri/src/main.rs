@@ -5,11 +5,47 @@ use tauri::{
     CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
 };
 
+#[tauri::command]
+fn set_window_effect(window: tauri::Window, effect: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use window_vibrancy::{apply_acrylic, apply_blur, clear_blur};
+
+        if effect == "frosted" {
+            apply_acrylic(&window, Some((26, 26, 30, 170)))
+                .or_else(|_| apply_blur(&window, Some((26, 26, 30, 150))))
+                .map_err(|error| error.to_string())?;
+        } else {
+            clear_blur(&window).map_err(|error| error.to_string())?;
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use window_vibrancy::{apply_vibrancy, clear_vibrancy, NSVisualEffectMaterial};
+
+        if effect == "frosted" {
+            apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, None)
+                .map_err(|error| error.to_string())?;
+        } else {
+            clear_vibrancy(&window).map_err(|error| error.to_string())?;
+        }
+    }
+
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        let _ = window;
+        let _ = effect;
+    }
+
+    Ok(())
+}
+
 fn build_tray() -> SystemTray {
-    let show   = CustomMenuItem::new("show".to_string(),   "Show FloatCalc");
-    let hide   = CustomMenuItem::new("hide".to_string(),   "Hide FloatCalc");
-    let sep    = SystemTrayMenuItem::Separator;
-    let quit   = CustomMenuItem::new("quit".to_string(),   "Quit");
+    let show = CustomMenuItem::new("show".to_string(), "Show FloatCalc");
+    let hide = CustomMenuItem::new("hide".to_string(), "Hide FloatCalc");
+    let sep = SystemTrayMenuItem::Separator;
+    let quit = CustomMenuItem::new("quit".to_string(), "Quit");
 
     let menu = SystemTrayMenu::new()
         .add_item(show)
@@ -22,9 +58,9 @@ fn build_tray() -> SystemTray {
 
 fn main() {
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![set_window_effect])
         .system_tray(build_tray())
         .on_system_tray_event(|app, event| match event {
-            // Left-click tray icon → show & focus window
             SystemTrayEvent::LeftClick { .. } => {
                 if let Some(window) = app.get_window("main") {
                     let _ = window.show();
@@ -32,7 +68,6 @@ fn main() {
                     let _ = window.unminimize();
                 }
             }
-            // Right-click menu items
             SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
                 "show" => {
                     if let Some(window) = app.get_window("main") {
@@ -53,11 +88,9 @@ fn main() {
             },
             _ => {}
         })
-        // Keep app alive when all windows are closed (tray mode)
         .on_window_event(|event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event.event() {
-                // Instead of quitting, hide to tray
-                event.window().hide().unwrap();
+                let _ = event.window().hide();
                 api.prevent_close();
             }
         })
