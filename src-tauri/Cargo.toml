@@ -22,6 +22,8 @@ tauri = { version = "1.6", features = [
 ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Prevents duplicate FloatCalc processes/tray icons when the app is opened again while hidden in the system tray.
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
